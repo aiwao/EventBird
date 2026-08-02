@@ -1,0 +1,39 @@
+name: Publish package
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Set up Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "25"
+          cache: gradle
+
+      - name: Test and publish package
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          eventbird_version="${GITHUB_REF_NAME#v}"
+          if [[ -z "$eventbird_version" ]]; then
+            echo "Tag must contain a version after 'v'." >&2
+            exit 1
+          fi
+
+          ./gradlew test publish \
+            -PeventBirdVersion="$eventbird_version" \
+            --no-daemon

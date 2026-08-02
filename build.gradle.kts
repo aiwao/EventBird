@@ -1,9 +1,11 @@
 plugins {
     kotlin("jvm") version "2.4.0"
+    `maven-publish`
 }
 
 group = "com.github.aiwao"
-version = "1.0-SNAPSHOT"
+version = providers.gradleProperty("eventBirdVersion")
+    .getOrElse("1.0-SNAPSHOT")
 
 repositories {
     mavenCentral()
@@ -17,6 +19,29 @@ dependencies {
 
 kotlin {
     jvmToolchain(25)
+}
+
+publishing {
+    publications {
+        create<MavenPublication>("githubPackages") {
+            from(components["java"])
+        }
+    }
+
+    repositories {
+        maven {
+            name = "GitHubPackages"
+            url = uri("https://maven.pkg.github.com/aiwao/EventBird")
+            credentials {
+                username = providers.gradleProperty("gpr.user")
+                    .orElse(providers.environmentVariable("GITHUB_ACTOR"))
+                    .orNull
+                password = providers.gradleProperty("gpr.key")
+                    .orElse(providers.environmentVariable("GITHUB_TOKEN"))
+                    .orNull
+            }
+        }
+    }
 }
 
 tasks.test {
