@@ -15,8 +15,12 @@ import kotlin.reflect.jvm.isAccessible
 class EventBus {
     private val eventHandlers =
         mutableMapOf<KClass<out Event>, MutableList<KFunction<*>>>()
-    private val listenerInstances = mutableMapOf<KClass<*>, Any>()
+    private val listenerInstancesByClass = mutableMapOf<KClass<*>, Any>()
     private val handlerReceivers = mutableMapOf<KFunction<*>, Any>()
+
+    /** Returns a snapshot of the listener instances held by this EventBus. */
+    val listenerInstances: List<Any>
+        get() = listenerInstancesByClass.values.toList()
 
     fun register(packagePath: String) {
         val packageName = normalizePackagePath(packagePath)
@@ -48,7 +52,7 @@ class EventBus {
         if (handlers.isEmpty()) return
 
         val handlerTypes = handlers.associateWith(::getEventType)
-        val listenerInstance = listenerInstances.getOrPut(listenerClass) {
+        val listenerInstance = listenerInstancesByClass.getOrPut(listenerClass) {
             createListenerInstance(listenerClass)
         }
 
