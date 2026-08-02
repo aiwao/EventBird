@@ -3,8 +3,10 @@ package io.github.aiwao.eventbird
 import io.github.aiwao.eventbird.fixtures.AnnotatedListener
 import io.github.aiwao.eventbird.fixtures.DirectEvent
 import io.github.aiwao.eventbird.fixtures.HandlerCalls
+import io.github.aiwao.eventbird.fixtures.ListenerWithoutAnnotation
 import io.github.aiwao.eventbird.fixtures.ObjectAnnotatedListener
 import io.github.aiwao.eventbird.fixtures.ObjectEvent
+import io.github.aiwao.eventbird.fixtures.RegisteredInheritedListener
 import io.github.aiwao.eventbird.fixtures.child.ChildEvent
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -34,6 +36,7 @@ class EventBusTest {
             listOf(
                 "direct:first",
                 "direct:second",
+                "direct:inherited",
                 "object:object",
                 "child:child",
             ),
@@ -50,7 +53,10 @@ class EventBusTest {
         eventBus.register("io.github.aiwao.eventbird.fixtures")
         eventBus.call(DirectEvent("once"))
 
-        assertEquals(listOf("once:first", "once:second"), HandlerCalls.values)
+        assertEquals(
+            listOf("once:first", "once:second", "once:inherited"),
+            HandlerCalls.values,
+        )
         assertEquals(1, AnnotatedListener.createdInstances)
     }
 
@@ -63,12 +69,18 @@ class EventBusTest {
         eventBus.register("io.github.aiwao.eventbird.fixtures")
         val secondSnapshot = eventBus.listenerInstances
 
-        assertEquals(3, firstSnapshot.size)
-        assertEquals(3, secondSnapshot.size)
+        assertEquals(4, firstSnapshot.size)
+        assertEquals(4, secondSnapshot.size)
         firstSnapshot.zip(secondSnapshot).forEach { (first, second) ->
             assertSame(first, second)
         }
         assertTrue(ObjectAnnotatedListener in secondSnapshot)
+        assertTrue(secondSnapshot.any { listener ->
+            listener is RegisteredInheritedListener
+        })
+        assertFalse(secondSnapshot.any { listener ->
+            listener is ListenerWithoutAnnotation
+        })
     }
 
     @Test
@@ -84,16 +96,21 @@ class EventBusTest {
         eventBus.call(ObjectEvent("enabled"))
 
         assertFalse(listener.isEnabled)
-        assertEquals(listOf("enabled:object"), HandlerCalls.values)
+        assertEquals(
+            listOf("disabled:inherited", "enabled:object"),
+            HandlerCalls.values,
+        )
 
         listener.isEnabled = true
         eventBus.call(DirectEvent("re-enabled"))
 
         assertEquals(
             listOf(
+                "disabled:inherited",
                 "enabled:object",
                 "re-enabled:first",
                 "re-enabled:second",
+                "re-enabled:inherited",
             ),
             HandlerCalls.values,
         )

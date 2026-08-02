@@ -4,18 +4,17 @@ import org.reflections.Reflections
 import kotlin.reflect.KClass
 import kotlin.reflect.KFunction
 import kotlin.reflect.full.createInstance
-import kotlin.reflect.full.declaredMemberFunctions
 import kotlin.reflect.full.extensionReceiverParameter
 import kotlin.reflect.full.findAnnotation
+import kotlin.reflect.full.memberFunctions
 import kotlin.reflect.full.valueParameters
 import kotlin.reflect.jvm.isAccessible
 
 class EventBus {
     private val eventHandlers =
-        mutableMapOf<KClass<out Event>, MutableList<KFunction<*>>>()
+        mutableMapOf<KClass<out Event>, MutableList<RegisteredEventHandler>>()
     private val listenerInstancesByClass =
         mutableMapOf<KClass<out EventListener>, EventListener>()
-    private val handlerReceivers = mutableMapOf<KFunction<*>, EventListener>()
 
     /** Returns a snapshot of the listener instances held by this EventBus. */
     val listenerInstances: List<EventListener>
@@ -34,10 +33,9 @@ class EventBus {
     fun call(event: Event) {
         eventHandlers[event::class]
             ?.toList()
-            ?.forEach { handler ->
-                val receiver = checkNotNull(handlerReceivers[handler]) {
-                    "No listener instance is registered for $handler"
-                }
+            ?.forEach { registeredHandler ->
+                val handler = registeredHandler.function
+                val receiver = registeredHandler.receiver
                 if (!receiver.isEnabled) return@forEach
 
                 handler.call(receiver, event)
@@ -45,7 +43,7 @@ class EventBus {
     }
 
     private fun registerListener(listenerClass: KClass<out EventListener>) {
-        val handlers = listenerClass.declaredMemberFunctions
+        val handlers = listenerClass.memberFunctions
             .filter { function -> function.findAnnotation<EventHandler>() != null }
             .sortedBy { function -> function.name }
 
@@ -58,11 +56,14 @@ class EventBus {
 
         handlerTypes.forEach { (handler, eventType) ->
             handler.isAccessible = true
-            handlerReceivers[handler] = listenerInstance
 
             val handlersForType = eventHandlers.getOrPut(eventType, ::mutableListOf)
-            if (handler !in handlersForType) {
-                handlersForType += handler
+            val isAlreadyRegistered = handlersForType.any { registeredHandler ->
+                registeredHandler.function == handler &&
+                    registeredHandler.receiver === listenerInstance
+            }
+            if (!isAlreadyRegistered) {
+                handlersForType += RegisteredEventHandler(handler, listenerInstance)
             }
         }
     }
@@ -140,4 +141,9 @@ class EventBus {
 
         return packageName
     }
+
+    private data class RegisteredEventHandler(
+        val function: KFunction<*>,
+        val receiver: EventListener,
+    )
 }

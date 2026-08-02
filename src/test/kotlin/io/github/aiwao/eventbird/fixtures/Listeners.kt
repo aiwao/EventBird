@@ -46,6 +46,16 @@ object ObjectAnnotatedListener : EventListener() {
     }
 }
 
+open class ParentListener : EventListener() {
+    @EventHandler
+    fun inherited(event: DirectEvent) {
+        HandlerCalls.values += "${event.value}:inherited"
+    }
+}
+
+@Register
+class RegisteredInheritedListener : ParentListener()
+
 class ListenerWithoutAnnotation : EventListener() {
     @EventHandler
     fun onDirectEvent(event: DirectEvent) {
