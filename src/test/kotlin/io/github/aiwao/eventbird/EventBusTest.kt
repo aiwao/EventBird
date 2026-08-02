@@ -9,6 +9,8 @@ import io.github.aiwao.eventbird.fixtures.ObjectAnnotatedListener
 import io.github.aiwao.eventbird.fixtures.ObjectEvent
 import io.github.aiwao.eventbird.fixtures.RegisteredInheritedListener
 import io.github.aiwao.eventbird.fixtures.child.ChildEvent
+import io.github.aiwao.eventbird.phasefixtures.PhaseEvent
+import io.github.aiwao.eventbird.phasefixtures.PhaseHandlerCalls
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -21,6 +23,7 @@ class EventBusTest {
     @BeforeTest
     fun clearHandlerCalls() {
         HandlerCalls.values.clear()
+        PhaseHandlerCalls.values.clear()
         AnnotatedListener.createdInstances = 0
     }
 
@@ -115,6 +118,25 @@ class EventBusTest {
                 "re-enabled:inherited",
             ),
             HandlerCalls.values,
+        )
+    }
+
+    @Test
+    fun `call invokes handlers matching the event phase`() {
+        val eventBus = EventBus()
+        eventBus.register("io.github.aiwao.eventbird.phasefixtures")
+
+        eventBus.call(PhaseEvent("pre", pre = true))
+        eventBus.call(PhaseEvent("post", pre = false))
+
+        assertEquals(
+            listOf(
+                "pre:both",
+                "pre:pre",
+                "post:both",
+                "post:post",
+            ),
+            PhaseHandlerCalls.values,
         )
     }
 

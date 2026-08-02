@@ -36,7 +36,9 @@ class EventBus {
             ?.forEach { registeredHandler ->
                 val handler = registeredHandler.function
                 val receiver = registeredHandler.receiver
-                if (!receiver.isEnabled) return@forEach
+                if (!receiver.isEnabled || !registeredHandler.accepts(event)) {
+                    return@forEach
+                }
 
                 handler.call(receiver, event)
             }
@@ -44,24 +46,40 @@ class EventBus {
 
     private fun registerListener(listenerClass: KClass<out EventListener>) {
         val handlers = listenerClass.memberFunctions
-            .filter { function -> function.findAnnotation<EventHandler>() != null }
-            .sortedBy { function -> function.name }
+            .mapNotNull { function ->
+                function.findAnnotation<EventHandler>()
+                    ?.let { annotation ->
+                        DiscoveredEventHandler(
+                            function = function,
+                            pre = annotation.pre,
+                            post = annotation.post,
+                        )
+                    }
+            }
+            .sortedBy { handler -> handler.function.name }
 
-        val handlerTypes = handlers.associateWith(::getEventType)
+        val handlerTypes = handlers.associateWith { handler ->
+            getEventType(handler.function)
+        }
         val listenerInstance = listenerInstancesByClass.getOrPut(listenerClass) {
             createListenerInstance(listenerClass)
         }
 
         handlerTypes.forEach { (handler, eventType) ->
-            handler.isAccessible = true
+            handler.function.isAccessible = true
 
             val handlersForType = eventHandlers.getOrPut(eventType, ::mutableListOf)
             val isAlreadyRegistered = handlersForType.any { registeredHandler ->
-                registeredHandler.function == handler &&
+                registeredHandler.function == handler.function &&
                     registeredHandler.receiver === listenerInstance
             }
             if (!isAlreadyRegistered) {
-                handlersForType += RegisteredEventHandler(handler, listenerInstance)
+                handlersForType += RegisteredEventHandler(
+                    function = handler.function,
+                    receiver = listenerInstance,
+                    pre = handler.pre,
+                    post = handler.post,
+                )
             }
         }
     }
@@ -143,5 +161,18 @@ class EventBus {
     private data class RegisteredEventHandler(
         val function: KFunction<*>,
         val receiver: EventListener,
+        val pre: Boolean,
+        val post: Boolean,
+    ) {
+        fun accepts(event: Event): Boolean =
+            (pre && post) ||
+                (event.pre && pre) ||
+                (!event.pre && post)
+    }
+
+    private data class DiscoveredEventHandler(
+        val function: KFunction<*>,
+        val pre: Boolean,
+        val post: Boolean,
     )
 }
