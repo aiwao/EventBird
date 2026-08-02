@@ -25,6 +25,7 @@ publishing {
     publications {
         create<MavenPublication>("githubPackages") {
             from(components["java"])
+            artifactId = "eventbird"
         }
     }
 
