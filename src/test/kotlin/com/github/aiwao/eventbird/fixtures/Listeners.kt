@@ -3,6 +3,7 @@ package com.github.aiwao.eventbird.fixtures
 import com.github.aiwao.eventbird.Event
 import com.github.aiwao.eventbird.EventHandler
 import com.github.aiwao.eventbird.EventListener
+import com.github.aiwao.eventbird.Register
 
 object HandlerCalls {
     val values = mutableListOf<String>()
@@ -12,8 +13,8 @@ class DirectEvent(val value: String) : Event()
 
 class ObjectEvent(val value: String) : Event()
 
-@EventListener
-class AnnotatedListener {
+@Register
+class AnnotatedListener : EventListener() {
     init {
         createdInstances++
     }
@@ -37,15 +38,15 @@ class AnnotatedListener {
     }
 }
 
-@EventListener
-object ObjectAnnotatedListener {
+@Register
+object ObjectAnnotatedListener : EventListener() {
     @EventHandler
     fun onObjectEvent(event: ObjectEvent) {
         HandlerCalls.values += "${event.value}:object"
     }
 }
 
-class ListenerWithoutAnnotation {
+class ListenerWithoutAnnotation : EventListener() {
     @EventHandler
     fun onDirectEvent(event: DirectEvent) {
         HandlerCalls.values += "${event.value}:unannotated-class"

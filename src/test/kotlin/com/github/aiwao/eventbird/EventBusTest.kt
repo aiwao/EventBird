@@ -9,6 +9,7 @@ import com.github.aiwao.eventbird.fixtures.child.ChildEvent
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertFailsWith
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
@@ -68,6 +69,34 @@ class EventBusTest {
             assertSame(first, second)
         }
         assertTrue(ObjectAnnotatedListener in secondSnapshot)
+    }
+
+    @Test
+    fun `call only invokes handlers of enabled listeners`() {
+        val eventBus = EventBus()
+        eventBus.register("com.github.aiwao.eventbird.fixtures")
+        val listener = eventBus.listenerInstances
+            .filterIsInstance<AnnotatedListener>()
+            .single()
+
+        listener.isEnabled = false
+        eventBus.call(DirectEvent("disabled"))
+        eventBus.call(ObjectEvent("enabled"))
+
+        assertFalse(listener.isEnabled)
+        assertEquals(listOf("enabled:object"), HandlerCalls.values)
+
+        listener.isEnabled = true
+        eventBus.call(DirectEvent("re-enabled"))
+
+        assertEquals(
+            listOf(
+                "enabled:object",
+                "re-enabled:first",
+                "re-enabled:second",
+            ),
+            HandlerCalls.values,
+        )
     }
 
     @Test

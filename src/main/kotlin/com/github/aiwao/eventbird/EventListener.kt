@@ -1,5 +1,5 @@
 package com.github.aiwao.eventbird
 
-@Target(AnnotationTarget.CLASS)
-@Retention(AnnotationRetention.RUNTIME)
-annotation class EventListener
+abstract class EventListener(
+    var isEnabled: Boolean = true,
+)

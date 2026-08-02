@@ -13,19 +13,20 @@ import kotlin.reflect.jvm.isAccessible
 class EventBus {
     private val eventHandlers =
         mutableMapOf<KClass<out Event>, MutableList<KFunction<*>>>()
-    private val listenerInstancesByClass = mutableMapOf<KClass<*>, Any>()
-    private val handlerReceivers = mutableMapOf<KFunction<*>, Any>()
+    private val listenerInstancesByClass =
+        mutableMapOf<KClass<out EventListener>, EventListener>()
+    private val handlerReceivers = mutableMapOf<KFunction<*>, EventListener>()
 
     /** Returns a snapshot of the listener instances held by this EventBus. */
-    val listenerInstances: List<Any>
+    val listenerInstances: List<EventListener>
         get() = listenerInstancesByClass.values.toList()
 
     fun register(packagePath: String) {
         val packageName = normalizePackagePath(packagePath)
 
         Reflections(packageName)
-            .getTypesAnnotatedWith(EventListener::class.java)
-            .map { listenerClass -> listenerClass.kotlin }
+            .getTypesAnnotatedWith(Register::class.java)
+            .map { listenerClass -> listenerClass.kotlin.asEventListenerClass() }
             .sortedBy { listenerClass -> listenerClass.qualifiedName }
             .forEach(::registerListener)
     }
@@ -37,12 +38,13 @@ class EventBus {
                 val receiver = checkNotNull(handlerReceivers[handler]) {
                     "No listener instance is registered for $handler"
                 }
+                if (!receiver.isEnabled) return@forEach
 
                 handler.call(receiver, event)
             }
     }
 
-    private fun registerListener(listenerClass: KClass<*>) {
+    private fun registerListener(listenerClass: KClass<out EventListener>) {
         val handlers = listenerClass.declaredMemberFunctions
             .filter { function -> function.findAnnotation<EventHandler>() != null }
             .sortedBy { function -> function.name }
@@ -100,12 +102,23 @@ class EventBus {
         }
             as? KClass<out Event>
 
-    private fun createListenerInstance(listenerClass: KClass<*>): Any =
+    @Suppress("UNCHECKED_CAST")
+    private fun KClass<*>.asEventListenerClass(): KClass<out EventListener> {
+        require(EventListener::class.java.isAssignableFrom(java)) {
+            "@Register class must extend EventListener: $qualifiedName"
+        }
+
+        return this as KClass<out EventListener>
+    }
+
+    private fun createListenerInstance(
+        listenerClass: KClass<out EventListener>,
+    ): EventListener =
         listenerClass.objectInstance ?: try {
             listenerClass.createInstance()
         } catch (exception: Exception) {
             throw IllegalArgumentException(
-                "@EventListener class must be an object or have a no-argument " +
+                "@Register class must be an object or have a no-argument " +
                     "constructor (all-default constructors are also supported): " +
                     listenerClass.qualifiedName,
                 exception,
