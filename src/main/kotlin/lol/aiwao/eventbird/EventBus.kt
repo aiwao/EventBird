@@ -3,8 +3,6 @@ package lol.aiwao.eventbird
 import org.reflections.Reflections
 import kotlin.reflect.KClass
 import kotlin.reflect.KFunction
-import kotlin.reflect.KType
-import kotlin.reflect.KTypeParameter
 import kotlin.reflect.full.createInstance
 import kotlin.reflect.full.declaredMemberFunctions
 import kotlin.reflect.full.extensionReceiverParameter
@@ -74,40 +72,32 @@ class EventBus {
         require(handler.extensionReceiverParameter == null) {
             "@EventHandler function must not be an extension function: $handler"
         }
+        require(handler.typeParameters.isEmpty()) {
+            "@EventHandler function must not declare type parameters: $handler"
+        }
 
         val eventParameter = handler.valueParameters.singleOrNull()
             ?: throw IllegalArgumentException(
                 "@EventHandler function must have exactly one argument: $handler",
             )
 
-        return resolveEventType(eventParameter.type)
+        val eventType = eventParameter.type
+        require(eventType.arguments.isEmpty()) {
+            "@EventHandler argument must not be a parameterized type: $handler"
+        }
+
+        return (eventType.classifier as? KClass<*>)?.asConcreteEventClass()
             ?: throw IllegalArgumentException(
-                "@EventHandler argument must be an Event type: $handler",
+                "@EventHandler argument must be a concrete Event type: $handler",
             )
     }
 
-    private fun resolveEventType(
-        type: KType,
-        visitedTypeParameters: Set<KTypeParameter> = emptySet(),
-    ): KClass<out Event>? = when (val classifier = type.classifier) {
-        is KClass<*> -> classifier.asEventClass()
-
-        is KTypeParameter -> {
-            if (classifier in visitedTypeParameters) {
-                null
-            } else {
-                classifier.upperBounds.firstNotNullOfOrNull { upperBound ->
-                    resolveEventType(upperBound, visitedTypeParameters + classifier)
-                }
-            }
-        }
-
-        else -> null
-    }
-
     @Suppress("UNCHECKED_CAST")
-    private fun KClass<*>.asEventClass(): KClass<out Event>? =
-        takeIf { candidate -> Event::class.java.isAssignableFrom(candidate.java) }
+    private fun KClass<*>.asConcreteEventClass(): KClass<out Event>? =
+        takeIf { candidate ->
+            !candidate.isAbstract &&
+                Event::class.java.isAssignableFrom(candidate.java)
+        }
             as? KClass<out Event>
 
     private fun createListenerInstance(listenerClass: KClass<*>): Any =

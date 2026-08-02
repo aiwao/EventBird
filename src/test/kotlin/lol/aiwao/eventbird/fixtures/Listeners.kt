@@ -10,7 +10,7 @@ object HandlerCalls {
 
 class DirectEvent(val value: String) : Event()
 
-open class GenericEvent(val value: String) : Event()
+class ObjectEvent(val value: String) : Event()
 
 @EventListener
 class AnnotatedListener {
@@ -38,10 +38,10 @@ class AnnotatedListener {
 }
 
 @EventListener
-object GenericAnnotatedListener {
+object ObjectAnnotatedListener {
     @EventHandler
-    fun <T : GenericEvent> onGenericEvent(event: T) {
-        HandlerCalls.values += "${event.value}:generic"
+    fun onObjectEvent(event: ObjectEvent) {
+        HandlerCalls.values += "${event.value}:object"
     }
 }
 

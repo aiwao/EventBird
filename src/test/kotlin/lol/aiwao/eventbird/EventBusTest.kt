@@ -2,9 +2,9 @@ package lol.aiwao.eventbird
 
 import lol.aiwao.eventbird.fixtures.AnnotatedListener
 import lol.aiwao.eventbird.fixtures.DirectEvent
-import lol.aiwao.eventbird.fixtures.GenericAnnotatedListener
-import lol.aiwao.eventbird.fixtures.GenericEvent
 import lol.aiwao.eventbird.fixtures.HandlerCalls
+import lol.aiwao.eventbird.fixtures.ObjectAnnotatedListener
+import lol.aiwao.eventbird.fixtures.ObjectEvent
 import lol.aiwao.eventbird.fixtures.child.ChildEvent
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -26,14 +26,14 @@ class EventBusTest {
         eventBus.register("lol/aiwao/eventbird/fixtures")
 
         eventBus.call(DirectEvent("direct"))
-        eventBus.call(GenericEvent("generic"))
+        eventBus.call(ObjectEvent("object"))
         eventBus.call(ChildEvent("child"))
 
         assertEquals(
             listOf(
                 "direct:first",
                 "direct:second",
-                "generic:generic",
+                "object:object",
                 "child:child",
             ),
             HandlerCalls.values,
@@ -67,7 +67,34 @@ class EventBusTest {
         firstSnapshot.zip(secondSnapshot).forEach { (first, second) ->
             assertSame(first, second)
         }
-        assertTrue(GenericAnnotatedListener in secondSnapshot)
+        assertTrue(ObjectAnnotatedListener in secondSnapshot)
+    }
+
+    @Test
+    fun `register rejects a generic event handler`() {
+        val exception = assertFailsWith<IllegalArgumentException> {
+            EventBus().register("lol.aiwao.eventbird.invalidgenericfixtures")
+        }
+
+        assertTrue(exception.message.orEmpty().contains("must not declare type parameters"))
+    }
+
+    @Test
+    fun `register rejects a parameterized event type`() {
+        val exception = assertFailsWith<IllegalArgumentException> {
+            EventBus().register("lol.aiwao.eventbird.invalidparameterizedfixtures")
+        }
+
+        assertTrue(exception.message.orEmpty().contains("must not be a parameterized type"))
+    }
+
+    @Test
+    fun `register rejects an abstract event type`() {
+        val exception = assertFailsWith<IllegalArgumentException> {
+            EventBus().register("lol.aiwao.eventbird.invalidabstractfixtures")
+        }
+
+        assertTrue(exception.message.orEmpty().contains("concrete Event type"))
     }
 
     @Test
