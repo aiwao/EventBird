@@ -1,11 +1,11 @@
-package com.github.aiwao.eventbird
+package io.github.aiwao.eventbird
 
-import com.github.aiwao.eventbird.fixtures.AnnotatedListener
-import com.github.aiwao.eventbird.fixtures.DirectEvent
-import com.github.aiwao.eventbird.fixtures.HandlerCalls
-import com.github.aiwao.eventbird.fixtures.ObjectAnnotatedListener
-import com.github.aiwao.eventbird.fixtures.ObjectEvent
-import com.github.aiwao.eventbird.fixtures.child.ChildEvent
+import io.github.aiwao.eventbird.fixtures.AnnotatedListener
+import io.github.aiwao.eventbird.fixtures.DirectEvent
+import io.github.aiwao.eventbird.fixtures.HandlerCalls
+import io.github.aiwao.eventbird.fixtures.ObjectAnnotatedListener
+import io.github.aiwao.eventbird.fixtures.ObjectEvent
+import io.github.aiwao.eventbird.fixtures.child.ChildEvent
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -24,7 +24,7 @@ class EventBusTest {
     @Test
     fun `call invokes all handlers registered for the event type`() {
         val eventBus = EventBus()
-        eventBus.register("com/github/aiwao/eventbird/fixtures")
+        eventBus.register("io/github/aiwao/eventbird/fixtures")
 
         eventBus.call(DirectEvent("direct"))
         eventBus.call(ObjectEvent("object"))
@@ -46,8 +46,8 @@ class EventBusTest {
     fun `register does not add the same handler more than once`() {
         val eventBus = EventBus()
 
-        eventBus.register("com.github.aiwao.eventbird.fixtures")
-        eventBus.register("com.github.aiwao.eventbird.fixtures")
+        eventBus.register("io.github.aiwao.eventbird.fixtures")
+        eventBus.register("io.github.aiwao.eventbird.fixtures")
         eventBus.call(DirectEvent("once"))
 
         assertEquals(listOf("once:first", "once:second"), HandlerCalls.values)
@@ -58,9 +58,9 @@ class EventBusTest {
     fun `listener instances are accessible and reused`() {
         val eventBus = EventBus()
 
-        eventBus.register("com.github.aiwao.eventbird.fixtures")
+        eventBus.register("io.github.aiwao.eventbird.fixtures")
         val firstSnapshot = eventBus.listenerInstances
-        eventBus.register("com.github.aiwao.eventbird.fixtures")
+        eventBus.register("io.github.aiwao.eventbird.fixtures")
         val secondSnapshot = eventBus.listenerInstances
 
         assertEquals(3, firstSnapshot.size)
@@ -74,7 +74,7 @@ class EventBusTest {
     @Test
     fun `call only invokes handlers of enabled listeners`() {
         val eventBus = EventBus()
-        eventBus.register("com.github.aiwao.eventbird.fixtures")
+        eventBus.register("io.github.aiwao.eventbird.fixtures")
         val listener = eventBus.listenerInstances
             .filterIsInstance<AnnotatedListener>()
             .single()
@@ -102,7 +102,7 @@ class EventBusTest {
     @Test
     fun `register rejects a generic event handler`() {
         val exception = assertFailsWith<IllegalArgumentException> {
-            EventBus().register("com.github.aiwao.eventbird.invalidgenericfixtures")
+            EventBus().register("io.github.aiwao.eventbird.invalidgenericfixtures")
         }
 
         assertTrue(exception.message.orEmpty().contains("must not declare type parameters"))
@@ -111,7 +111,7 @@ class EventBusTest {
     @Test
     fun `register rejects a parameterized event type`() {
         val exception = assertFailsWith<IllegalArgumentException> {
-            EventBus().register("com.github.aiwao.eventbird.invalidparameterizedfixtures")
+            EventBus().register("io.github.aiwao.eventbird.invalidparameterizedfixtures")
         }
 
         assertTrue(exception.message.orEmpty().contains("must not be a parameterized type"))
@@ -120,7 +120,7 @@ class EventBusTest {
     @Test
     fun `register rejects an abstract event type`() {
         val exception = assertFailsWith<IllegalArgumentException> {
-            EventBus().register("com.github.aiwao.eventbird.invalidabstractfixtures")
+            EventBus().register("io.github.aiwao.eventbird.invalidabstractfixtures")
         }
 
         assertTrue(exception.message.orEmpty().contains("concrete Event type"))
@@ -129,7 +129,7 @@ class EventBusTest {
     @Test
     fun `register rejects a listener that cannot be instantiated`() {
         val exception = assertFailsWith<IllegalArgumentException> {
-            EventBus().register("com.github.aiwao.eventbird.invalidfixtures")
+            EventBus().register("io.github.aiwao.eventbird.invalidfixtures")
         }
 
         assertTrue(exception.message.orEmpty().contains("no-argument constructor"))

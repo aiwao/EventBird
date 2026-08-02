@@ -1,4 +1,4 @@
-package com.github.aiwao.eventbird
+package io.github.aiwao.eventbird
 
 @Target(AnnotationTarget.FUNCTION)
 @Retention(AnnotationRetention.RUNTIME)

@@ -1,4 +1,4 @@
-package com.github.aiwao.eventbird
+package io.github.aiwao.eventbird
 
 abstract class EventListener(
     var isEnabled: Boolean = true,

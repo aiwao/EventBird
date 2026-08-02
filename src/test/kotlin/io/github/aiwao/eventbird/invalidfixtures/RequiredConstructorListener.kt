@@ -1,9 +1,9 @@
-package com.github.aiwao.eventbird.invalidfixtures
+package io.github.aiwao.eventbird.invalidfixtures
 
-import com.github.aiwao.eventbird.Event
-import com.github.aiwao.eventbird.EventHandler
-import com.github.aiwao.eventbird.EventListener
-import com.github.aiwao.eventbird.Register
+import io.github.aiwao.eventbird.Event
+import io.github.aiwao.eventbird.EventHandler
+import io.github.aiwao.eventbird.EventListener
+import io.github.aiwao.eventbird.Register
 
 class InvalidEvent : Event()
 

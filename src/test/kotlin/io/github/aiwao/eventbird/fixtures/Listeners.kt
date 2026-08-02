@@ -1,9 +1,9 @@
-package com.github.aiwao.eventbird.fixtures
+package io.github.aiwao.eventbird.fixtures
 
-import com.github.aiwao.eventbird.Event
-import com.github.aiwao.eventbird.EventHandler
-import com.github.aiwao.eventbird.EventListener
-import com.github.aiwao.eventbird.Register
+import io.github.aiwao.eventbird.Event
+import io.github.aiwao.eventbird.EventHandler
+import io.github.aiwao.eventbird.EventListener
+import io.github.aiwao.eventbird.Register
 
 object HandlerCalls {
     val values = mutableListOf<String>()
