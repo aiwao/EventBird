@@ -53,6 +53,7 @@ class EventBus {
                             function = function,
                             pre = annotation.pre,
                             post = annotation.post,
+                            priority = annotation.priority,
                         )
                     }
             }
@@ -79,7 +80,11 @@ class EventBus {
                     receiver = listenerInstance,
                     pre = handler.pre,
                     post = handler.post,
+                    priority = handler.priority,
                 )
+                handlersForType.sortByDescending { registeredHandler ->
+                    registeredHandler.priority
+                }
             }
         }
     }
@@ -163,6 +168,7 @@ class EventBus {
         val receiver: EventListener,
         val pre: Boolean,
         val post: Boolean,
+        val priority: Int,
     ) {
         fun accepts(event: Event): Boolean =
             (pre && post) ||
@@ -174,5 +180,6 @@ class EventBus {
         val function: KFunction<*>,
         val pre: Boolean,
         val post: Boolean,
+        val priority: Int,
     )
 }

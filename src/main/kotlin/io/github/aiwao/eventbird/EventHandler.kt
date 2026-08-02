@@ -5,4 +5,5 @@ package io.github.aiwao.eventbird
 annotation class EventHandler(
     val pre: Boolean = true,
     val post: Boolean = true,
+    val priority: Int = 0,
 )

@@ -11,6 +11,8 @@ import io.github.aiwao.eventbird.fixtures.RegisteredInheritedListener
 import io.github.aiwao.eventbird.fixtures.child.ChildEvent
 import io.github.aiwao.eventbird.phasefixtures.PhaseEvent
 import io.github.aiwao.eventbird.phasefixtures.PhaseHandlerCalls
+import io.github.aiwao.eventbird.priorityfixtures.PriorityEvent
+import io.github.aiwao.eventbird.priorityfixtures.PriorityHandlerCalls
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -24,6 +26,7 @@ class EventBusTest {
     fun clearHandlerCalls() {
         HandlerCalls.values.clear()
         PhaseHandlerCalls.values.clear()
+        PriorityHandlerCalls.values.clear()
         AnnotatedListener.createdInstances = 0
     }
 
@@ -137,6 +140,19 @@ class EventBusTest {
                 "post:post",
             ),
             PhaseHandlerCalls.values,
+        )
+    }
+
+    @Test
+    fun `call invokes handlers from highest to lowest priority`() {
+        val eventBus = EventBus()
+        eventBus.register("io.github.aiwao.eventbird.priorityfixtures")
+
+        eventBus.call(PriorityEvent())
+
+        assertEquals(
+            listOf("high:false", "middle:false", "default:false", "low:false"),
+            PriorityHandlerCalls.values,
         )
     }
 
