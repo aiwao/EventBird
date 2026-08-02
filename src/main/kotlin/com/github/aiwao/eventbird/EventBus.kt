@@ -1,4 +1,4 @@
-package lol.aiwao.eventbird
+package com.github.aiwao.eventbird
 
 import org.reflections.Reflections
 import kotlin.reflect.KClass

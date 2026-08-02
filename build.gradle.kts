@@ -2,7 +2,7 @@ plugins {
     kotlin("jvm") version "2.4.0"
 }
 
-group = "lol.aiwao"
+group = "com.github.aiwao"
 version = "1.0-SNAPSHOT"
 
 repositories {

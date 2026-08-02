@@ -1,8 +1,8 @@
-package lol.aiwao.eventbird.invalidfixtures
+package com.github.aiwao.eventbird.invalidfixtures
 
-import lol.aiwao.eventbird.Event
-import lol.aiwao.eventbird.EventHandler
-import lol.aiwao.eventbird.EventListener
+import com.github.aiwao.eventbird.Event
+import com.github.aiwao.eventbird.EventHandler
+import com.github.aiwao.eventbird.EventListener
 
 class InvalidEvent : Event()
 
