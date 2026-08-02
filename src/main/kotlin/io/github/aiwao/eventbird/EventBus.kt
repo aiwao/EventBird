@@ -1,5 +1,8 @@
 package io.github.aiwao.eventbird
 
+import java.lang.invoke.MethodHandle
+import java.lang.invoke.MethodHandles
+import java.lang.invoke.MethodType
 import org.reflections.Reflections
 import kotlin.reflect.KClass
 import kotlin.reflect.KFunction
@@ -9,12 +12,16 @@ import kotlin.reflect.full.findAnnotation
 import kotlin.reflect.full.memberFunctions
 import kotlin.reflect.full.valueParameters
 import kotlin.reflect.jvm.isAccessible
+import kotlin.reflect.jvm.javaMethod
 
 class EventBus {
-    private val eventHandlers =
+    private val registeredEventHandlers =
         mutableMapOf<KClass<out Event>, MutableList<RegisteredEventHandler>>()
     private val listenerInstancesByClass =
         mutableMapOf<KClass<out EventListener>, EventListener>()
+
+    @Volatile
+    private var dispatchTables = emptyMap<Class<out Event>, DispatchTable>()
 
     /** Returns a snapshot of the listener instances held by this EventBus. */
     val listenerInstances: List<EventListener>
@@ -28,20 +35,18 @@ class EventBus {
             .map { listenerClass -> listenerClass.kotlin.asEventListenerClass() }
             .sortedBy { listenerClass -> listenerClass.qualifiedName }
             .forEach(::registerListener)
+
+        rebuildDispatchTables()
     }
 
     fun call(event: Event) {
-        eventHandlers[event::class]
-            ?.toList()
-            ?.forEach { registeredHandler ->
-                val handler = registeredHandler.function
-                val receiver = registeredHandler.receiver
-                if (!receiver.isEnabled || !registeredHandler.accepts(event)) {
-                    return@forEach
-                }
+        val dispatchTable = dispatchTables[event.javaClass] ?: return
+        val handlers = if (event.pre) dispatchTable.pre else dispatchTable.post
 
-                handler.call(receiver, event)
-            }
+        for (handler in handlers) {
+            if (!handler.receiver.isEnabled) continue
+            handler.invoker.invoke(event)
+        }
     }
 
     private fun registerListener(listenerClass: KClass<out EventListener>) {
@@ -69,7 +74,8 @@ class EventBus {
         handlerTypes.forEach { (handler, eventType) ->
             handler.function.isAccessible = true
 
-            val handlersForType = eventHandlers.getOrPut(eventType, ::mutableListOf)
+            val handlersForType =
+                registeredEventHandlers.getOrPut(eventType, ::mutableListOf)
             val isAlreadyRegistered = handlersForType.any { registeredHandler ->
                 registeredHandler.function == handler.function &&
                     registeredHandler.receiver === listenerInstance
@@ -81,11 +87,59 @@ class EventBus {
                     pre = handler.pre,
                     post = handler.post,
                     priority = handler.priority,
+                    invoker = createInvoker(handler.function, listenerInstance),
                 )
-                handlersForType.sortByDescending { registeredHandler ->
-                    registeredHandler.priority
-                }
             }
+        }
+    }
+
+    private fun rebuildDispatchTables() {
+        dispatchTables = registeredEventHandlers.mapKeys { (eventType) ->
+            eventType.java
+        }.mapValues { (_, handlers) ->
+            val sortedHandlers = handlers.sortedByDescending { handler ->
+                handler.priority
+            }
+
+            DispatchTable(
+                pre = sortedHandlers.filter(RegisteredEventHandler::pre).toTypedArray(),
+                post = sortedHandlers.filter(RegisteredEventHandler::post).toTypedArray(),
+            )
+        }
+    }
+
+    private fun createInvoker(
+        function: KFunction<*>,
+        receiver: EventListener,
+    ): EventHandlerInvoker {
+        val methodHandle = createMethodHandle(function, receiver)
+            ?: return EventHandlerInvoker { event -> function.call(receiver, event) }
+
+        return EventHandlerInvoker { event -> methodHandle.invokeExact(event) }
+    }
+
+    private fun createMethodHandle(
+        function: KFunction<*>,
+        receiver: EventListener,
+    ): MethodHandle? {
+        val javaMethod = function.javaMethod ?: return null
+
+        return try {
+            val lookup = MethodHandles.privateLookupIn(
+                javaMethod.declaringClass,
+                MethodHandles.lookup(),
+            )
+
+            lookup.unreflect(javaMethod)
+                .bindTo(receiver)
+                .asType(
+                    MethodType.methodType(
+                        Void.TYPE,
+                        Event::class.java,
+                    ),
+                )
+        } catch (_: Exception) {
+            null
         }
     }
 
@@ -169,12 +223,8 @@ class EventBus {
         val pre: Boolean,
         val post: Boolean,
         val priority: Int,
-    ) {
-        fun accepts(event: Event): Boolean =
-            (pre && post) ||
-                (event.pre && pre) ||
-                (!event.pre && post)
-    }
+        val invoker: EventHandlerInvoker,
+    )
 
     private data class DiscoveredEventHandler(
         val function: KFunction<*>,
@@ -182,4 +232,13 @@ class EventBus {
         val post: Boolean,
         val priority: Int,
     )
+
+    private data class DispatchTable(
+        val pre: Array<RegisteredEventHandler>,
+        val post: Array<RegisteredEventHandler>,
+    )
+
+    private fun interface EventHandlerInvoker {
+        fun invoke(event: Event)
+    }
 }
