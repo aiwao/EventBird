@@ -27,6 +27,10 @@ jobs:
       - name: Test and publish package
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
+          ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
+          ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.SIGNING_KEY }}
+          ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.SIGNING_PASSWORD }}
         run: |
           eventbird_version="${GITHUB_REF_NAME#v}"
           if [[ -z "$eventbird_version" ]]; then
@@ -34,6 +38,8 @@ jobs:
             exit 1
           fi
 
-          ./gradlew test publish \
+          ./gradlew test \
+            publishToMavenCentral \
+            publishAllPublicationsToGitHubPackagesRepository \
             -PeventBirdVersion="$eventbird_version" \
             --no-daemon
