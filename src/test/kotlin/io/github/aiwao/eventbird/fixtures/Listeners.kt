@@ -56,6 +56,9 @@ open class ParentListener : EventListener() {
 @Register
 class RegisteredInheritedListener : ParentListener()
 
+@Register
+class EmptyListener : EventListener()
+
 class ListenerWithoutAnnotation : EventListener() {
     @EventHandler
     fun onDirectEvent(event: DirectEvent) {

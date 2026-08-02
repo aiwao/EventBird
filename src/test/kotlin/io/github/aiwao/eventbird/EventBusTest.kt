@@ -2,6 +2,7 @@ package io.github.aiwao.eventbird
 
 import io.github.aiwao.eventbird.fixtures.AnnotatedListener
 import io.github.aiwao.eventbird.fixtures.DirectEvent
+import io.github.aiwao.eventbird.fixtures.EmptyListener
 import io.github.aiwao.eventbird.fixtures.HandlerCalls
 import io.github.aiwao.eventbird.fixtures.ListenerWithoutAnnotation
 import io.github.aiwao.eventbird.fixtures.ObjectAnnotatedListener
@@ -69,12 +70,13 @@ class EventBusTest {
         eventBus.register("io.github.aiwao.eventbird.fixtures")
         val secondSnapshot = eventBus.listenerInstances
 
-        assertEquals(4, firstSnapshot.size)
-        assertEquals(4, secondSnapshot.size)
+        assertEquals(5, firstSnapshot.size)
+        assertEquals(5, secondSnapshot.size)
         firstSnapshot.zip(secondSnapshot).forEach { (first, second) ->
             assertSame(first, second)
         }
         assertTrue(ObjectAnnotatedListener in secondSnapshot)
+        assertTrue(secondSnapshot.any { listener -> listener is EmptyListener })
         assertTrue(secondSnapshot.any { listener ->
             listener is RegisteredInheritedListener
         })

@@ -47,8 +47,6 @@ class EventBus {
             .filter { function -> function.findAnnotation<EventHandler>() != null }
             .sortedBy { function -> function.name }
 
-        if (handlers.isEmpty()) return
-
         val handlerTypes = handlers.associateWith(::getEventType)
         val listenerInstance = listenerInstancesByClass.getOrPut(listenerClass) {
             createListenerInstance(listenerClass)
