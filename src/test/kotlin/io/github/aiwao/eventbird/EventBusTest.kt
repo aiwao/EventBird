@@ -28,12 +28,14 @@ class EventBusTest {
         PhaseHandlerCalls.values.clear()
         PriorityHandlerCalls.values.clear()
         AnnotatedListener.createdInstances = 0
+        ObjectAnnotatedListener.isEnabled = false
     }
 
     @Test
     fun `call invokes all handlers registered for the event type`() {
         val eventBus = EventBus()
         eventBus.register("io/github/aiwao/eventbird/fixtures")
+        eventBus.enableAllListeners()
 
         eventBus.call(DirectEvent("direct"))
         eventBus.call(ObjectEvent("object"))
@@ -58,6 +60,7 @@ class EventBusTest {
 
         eventBus.register("io.github.aiwao.eventbird.fixtures")
         eventBus.register("io.github.aiwao.eventbird.fixtures")
+        eventBus.enableAllListeners()
         eventBus.call(DirectEvent("once"))
 
         assertEquals(
@@ -78,6 +81,7 @@ class EventBusTest {
 
         assertEquals(5, firstSnapshot.size)
         assertEquals(5, secondSnapshot.size)
+        assertTrue(secondSnapshot.none(EventListener::isEnabled))
         firstSnapshot.zip(secondSnapshot).forEach { (first, second) ->
             assertSame(first, second)
         }
@@ -98,8 +102,11 @@ class EventBusTest {
         val listener = eventBus.listenerInstances
             .filterIsInstance<AnnotatedListener>()
             .single()
+        eventBus.listenerInstances
+            .filterNot { registeredListener -> registeredListener === listener }
+            .forEach { registeredListener -> registeredListener.isEnabled = true }
 
-        listener.isEnabled = false
+        assertFalse(listener.isEnabled)
         eventBus.call(DirectEvent("disabled"))
         eventBus.call(ObjectEvent("enabled"))
 
@@ -128,6 +135,7 @@ class EventBusTest {
     fun `call invokes handlers matching the event phase`() {
         val eventBus = EventBus()
         eventBus.register("io.github.aiwao.eventbird.phasefixtures")
+        eventBus.enableAllListeners()
 
         eventBus.call(PhaseEvent("pre", pre = true))
         eventBus.call(PhaseEvent("post", pre = false))
@@ -147,6 +155,7 @@ class EventBusTest {
     fun `call invokes handlers from highest to lowest priority`() {
         val eventBus = EventBus()
         eventBus.register("io.github.aiwao.eventbird.priorityfixtures")
+        eventBus.enableAllListeners()
 
         eventBus.call(PriorityEvent())
 
@@ -190,5 +199,9 @@ class EventBusTest {
         }
 
         assertTrue(exception.message.orEmpty().contains("no-argument constructor"))
+    }
+
+    private fun EventBus.enableAllListeners() {
+        listenerInstances.forEach { listener -> listener.isEnabled = true }
     }
 }
