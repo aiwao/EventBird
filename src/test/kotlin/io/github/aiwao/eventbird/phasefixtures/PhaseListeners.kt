@@ -15,7 +15,9 @@ class PhaseEvent(
 ) : Event(pre)
 
 @Register
-class PhaseListener : EventListener() {
+class PhaseListener : EventListener {
+    override var isEnabled = false
+
     @EventHandler(pre = true, post = true)
     fun both(event: PhaseEvent) {
         PhaseHandlerCalls.values += "${event.value}:both"

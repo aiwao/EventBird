@@ -8,7 +8,9 @@ import io.github.aiwao.eventbird.Register
 abstract class AbstractEvent : Event()
 
 @Register
-object AbstractHandlerListener : EventListener() {
+object AbstractHandlerListener : EventListener {
+    override var isEnabled = false
+
     @EventHandler
     fun onEvent(event: AbstractEvent) = Unit
 }

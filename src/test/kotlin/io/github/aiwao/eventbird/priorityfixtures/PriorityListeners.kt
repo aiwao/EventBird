@@ -12,7 +12,9 @@ object PriorityHandlerCalls {
 class PriorityEvent : Event()
 
 @Register
-class MiddlePriorityListener : EventListener() {
+class MiddlePriorityListener : EventListener {
+    override var isEnabled = false
+
     @EventHandler(priority = 50)
     fun middle(event: PriorityEvent) {
         PriorityHandlerCalls.values += "middle:${event.pre}"
@@ -20,7 +22,9 @@ class MiddlePriorityListener : EventListener() {
 }
 
 @Register
-class PriorityListener : EventListener() {
+class PriorityListener : EventListener {
+    override var isEnabled = false
+
     @EventHandler(priority = -100)
     fun aLow(event: PriorityEvent) {
         PriorityHandlerCalls.values += "low:${event.pre}"

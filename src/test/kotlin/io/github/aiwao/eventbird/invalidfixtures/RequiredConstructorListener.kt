@@ -10,7 +10,9 @@ class InvalidEvent : Event()
 @Register
 class RequiredConstructorListener(
     private val dependency: String,
-) : EventListener() {
+) : EventListener {
+    override var isEnabled = false
+
     @EventHandler
     fun onInvalidEvent(event: InvalidEvent) {
         dependency.length + event.hashCode()

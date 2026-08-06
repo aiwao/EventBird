@@ -9,7 +9,9 @@ import io.github.aiwao.eventbird.fixtures.HandlerCalls
 class ChildEvent(val value: String) : Event()
 
 @Register
-class ChildAnnotatedListener : EventListener() {
+class ChildAnnotatedListener : EventListener {
+    override var isEnabled = false
+
     @EventHandler
     fun onChildEvent(event: ChildEvent) {
         HandlerCalls.values += "${event.value}:child"

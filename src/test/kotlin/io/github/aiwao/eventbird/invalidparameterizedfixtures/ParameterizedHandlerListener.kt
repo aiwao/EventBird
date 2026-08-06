@@ -8,7 +8,9 @@ import io.github.aiwao.eventbird.Register
 class ParameterizedEvent<T> : Event()
 
 @Register
-object ParameterizedHandlerListener : EventListener() {
+object ParameterizedHandlerListener : EventListener {
+    override var isEnabled = false
+
     @EventHandler
     fun onEvent(event: ParameterizedEvent<String>) = Unit
 }

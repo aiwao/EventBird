@@ -8,7 +8,9 @@ import io.github.aiwao.eventbird.Register
 open class GenericHandlerEvent : Event()
 
 @Register
-object GenericHandlerListener : EventListener() {
+object GenericHandlerListener : EventListener {
+    override var isEnabled = false
+
     @EventHandler
     fun <T : GenericHandlerEvent> onEvent(event: T) = Unit
 }

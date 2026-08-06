@@ -14,7 +14,9 @@ class DirectEvent(val value: String) : Event()
 class ObjectEvent(val value: String) : Event()
 
 @Register
-class AnnotatedListener : EventListener() {
+class AnnotatedListener : EventListener {
+    override var isEnabled = false
+
     init {
         createdInstances++
     }
@@ -39,14 +41,18 @@ class AnnotatedListener : EventListener() {
 }
 
 @Register
-object ObjectAnnotatedListener : EventListener() {
+object ObjectAnnotatedListener : EventListener {
+    override var isEnabled = false
+
     @EventHandler
     fun onObjectEvent(event: ObjectEvent) {
         HandlerCalls.values += "${event.value}:object"
     }
 }
 
-open class ParentListener : EventListener() {
+open class ParentListener : EventListener {
+    override var isEnabled = false
+
     @EventHandler
     fun inherited(event: DirectEvent) {
         HandlerCalls.values += "${event.value}:inherited"
@@ -57,9 +63,13 @@ open class ParentListener : EventListener() {
 class RegisteredInheritedListener : ParentListener()
 
 @Register
-class EmptyListener : EventListener()
+class EmptyListener : EventListener {
+    override var isEnabled = false
+}
 
-class ListenerWithoutAnnotation : EventListener() {
+class ListenerWithoutAnnotation : EventListener {
+    override var isEnabled = false
+
     @EventHandler
     fun onDirectEvent(event: DirectEvent) {
         HandlerCalls.values += "${event.value}:unannotated-class"
